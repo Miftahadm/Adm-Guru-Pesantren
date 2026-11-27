@@ -1,6 +1,6 @@
 import { AppDatabase, VersionRecord } from '../types';
 
-export const CURRENT_APP_VERSION = '1.4.0';
+export const CURRENT_APP_VERSION = '1.4.1';
 export const CURRENT_SCHEMA_VERSION = 3;
 
 export const DAY_NAMES: Record<number, string> = {
@@ -111,6 +111,15 @@ export const SYSTEM_RELEASE_MANIFEST: Omit<VersionRecord, 'recordedOnDeviceAt'>[
       { type: 'Added', summary: 'Switcher Dual Mode (Offline & Online) di Beranda dan Navigasi: mode Offline memakai database perangkat lokal secara penuh, mode Online menyinkronkan pembaruan dari GitHub otomatis.' },
       { type: 'Added', summary: 'Sinkronisasi otomatis dari GitHub meliputi pembaruan Service Worker/aplikasi, rilis APK terbaru, data inti (kelas, santri, jenis kegiatan non-kelas), dan pengumuman pusat pesantren.' },
       { type: 'Added', summary: 'Pengaturan Repository GitHub & ekspor central-data.json di Panel Admin (Password 2011).' },
+    ],
+  },
+  {
+    version: '1.4.1',
+    releasedAt: '2026-11-27',
+    title: 'Logo Resmi Default Pesantren Trubus Iman',
+    source: 'system_release',
+    changes: [
+      { type: 'Updated', summary: 'Logo default aplikasi, ikon PWA Android/iOS, favicon, dan Kop Surat PDF kini menggunakan logo resmi Pesantren Trubus Iman (tersimpan offline di perangkat).' },
     ],
   },
 ];
@@ -391,7 +400,7 @@ export function createInitialDatabase(): AppDatabase {
       appName: 'Adm Guru Pesantren Trubus Iman',
       logoDataUrl: null,
       thumbnailDataUrl: null,
-      foundationName: 'YAYASAN PENDIDIKAN ISLAM TRUBUS IMAN',
+      foundationName: 'YAYASAN SOSIAL DAN PENDIDIKAN ISLAM TRUBUS IMAN',
       institutionName: 'PONDOK PESANTREN TRUBUS IMAN',
       institutionSubtitle: 'Lembaga Pendidikan Islam Terpadu · Berilmu, Beramal, Berakhlakul Karimah',
       address: 'Jl. Padang Pangrapat, Kec. Tanah Grogot, Kab. Paser, Kalimantan Timur',

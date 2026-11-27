@@ -328,7 +328,7 @@ export function applyBrandingToDocument(branding: AppDatabase['branding']): void
     document.title = branding.appName;
   }
 
-  const iconHref = branding.logoDataUrl || '/icon.svg';
+  const iconHref = branding.logoDataUrl || '/logo-trubus-iman.png';
   let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
   if (!favicon) {
     favicon = document.createElement('link');

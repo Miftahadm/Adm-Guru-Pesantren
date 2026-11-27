@@ -66,6 +66,26 @@ function getPaperFormat(paperSize: 'a4' | 'f4'): string | [number, number] {
   return paperSize === 'f4' ? [215, 330] : 'a4';
 }
 
+let cachedDefaultLogoDataUrl: string | null = null;
+
+if (typeof window !== 'undefined') {
+  fetch('/logo-trubus-iman.png')
+    .then((r) => (r.ok ? r.blob() : null))
+    .then((blob) => {
+      if (!blob) return;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          cachedDefaultLogoDataUrl = reader.result;
+        }
+      };
+      reader.readAsDataURL(blob);
+    })
+    .catch(() => {
+      // Offline/preload fallback handled safely
+    });
+}
+
 /**
  * Renders the Official Pesantren Trubus Iman Letterhead (Kop Surat) onto a jsPDF document.
  * Returns the Y cursor position where body content should begin.
@@ -80,17 +100,21 @@ function renderOfficialKopSurat(
   const marginX = 14;
   let y = 12;
 
-  // Optional logo on top-left of Kop Surat
-  const hasLogo = Boolean(branding.logoDataUrl && branding.logoDataUrl.startsWith('data:image/'));
-  if (hasLogo && branding.logoDataUrl) {
+  // Use Admin custom logo if uploaded, otherwise use preloaded official Trubus Iman PNG logo
+  const effectiveLogo =
+    branding.logoDataUrl && branding.logoDataUrl.startsWith('data:image/')
+      ? branding.logoDataUrl
+      : cachedDefaultLogoDataUrl;
+
+  if (effectiveLogo) {
     try {
-      const format = branding.logoDataUrl.includes('image/png') ? 'PNG' : 'JPEG';
-      doc.addImage(branding.logoDataUrl, format, marginX, y, 18, 18);
+      const format = effectiveLogo.includes('image/png') ? 'PNG' : 'JPEG';
+      doc.addImage(effectiveLogo, format, marginX, y - 1, 19, 19);
     } catch {
       // Fallback gracefully if unsupported image format
     }
   } else {
-    // Draw subtle official emerald crest box as vector emblem
+    // Draw subtle official emerald crest box as vector fallback
     doc.setFillColor(6, 95, 70);
     doc.roundedRect(marginX, y + 1, 16, 16, 3, 3, 'F');
     doc.setTextColor(245, 158, 11);
