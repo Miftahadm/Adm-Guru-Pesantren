@@ -5,18 +5,21 @@ import {
   BookOpen,
   CalendarDays,
   CheckSquare,
+  Cloud,
   DownloadCloud,
   FileSpreadsheet,
   GitCommitHorizontal,
+  HardDrive,
   HardDriveDownload,
   Home,
   LayoutGrid,
+  RefreshCw,
   Shield,
   Sparkles,
   UserCog,
   Users,
 } from 'lucide-react';
-import { AppDatabase, NavTab } from '../types';
+import { AppDatabase, AppMode, NavTab } from '../types';
 import { BrandLogo } from './BrandLogo';
 import { OfflineIndicator, PWAInstallButton } from './PWAInstallButton';
 
@@ -25,6 +28,8 @@ interface LayoutProps {
   activeTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   onOpenProfileModal: () => void;
+  onSelectMode: (mode: AppMode) => void;
+  isSyncing: boolean;
   upgradedFrom: string | null;
   onDismissUpgrade: () => void;
   children: React.ReactNode;
@@ -96,6 +101,8 @@ export const Layout: React.FC<LayoutProps> = ({
   activeTab,
   onSelectTab,
   onOpenProfileModal,
+  onSelectMode,
+  isSyncing,
   upgradedFrom,
   onDismissUpgrade,
   children,
@@ -123,8 +130,44 @@ export const Layout: React.FC<LayoutProps> = ({
               {db.branding.appName}
             </h1>
             <p className="text-xs text-slate-500 truncate mt-0.5">
-              v{db.installedAppVersion} · Offline di Perangkat
+              v{db.installedAppVersion} ·{' '}
+              {db.syncConfig.mode === 'online' ? 'Mode Online (GitHub)' : 'Mode Offline (Perangkat)'}
             </p>
+          </div>
+        </div>
+
+        {/* Dual Mode Switcher in Sidebar */}
+        <div className="px-4 pt-3 pb-1">
+          <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200/80">
+            <button
+              type="button"
+              onClick={() => onSelectMode('offline')}
+              className={`min-h-[36px] rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${
+                db.syncConfig.mode === 'offline'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <HardDrive className="w-3.5 h-3.5 shrink-0" />
+              Offline
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectMode('online')}
+              disabled={isSyncing}
+              className={`min-h-[36px] rounded-lg text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${
+                db.syncConfig.mode === 'online'
+                  ? 'bg-emerald-800 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {isSyncing ? (
+                <RefreshCw className="w-3.5 h-3.5 shrink-0 animate-spin" />
+              ) : (
+                <Cloud className="w-3.5 h-3.5 shrink-0" />
+              )}
+              Online
+            </button>
           </div>
         </div>
 

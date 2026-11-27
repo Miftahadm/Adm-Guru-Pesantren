@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import {
   CheckCircle2,
+  Cloud,
+  Download,
   Eye,
   EyeOff,
   FileCode2,
@@ -8,7 +10,9 @@ import {
   Image as ImageIcon,
   Lock,
   LogOut,
+  Megaphone,
   Plus,
+  RefreshCw,
   RotateCcw,
   Save,
   Shield,
@@ -17,14 +21,24 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import { AdminBranding, AppDatabase, VersionChangeItem, VersionChangeType } from '../types';
+import {
+  AdminBranding,
+  AppDatabase,
+  CentralAnnouncement,
+  GitHubSyncConfig,
+  VersionChangeItem,
+  VersionChangeType,
+} from '../types';
 import { appendAutomatedVersionRecord } from '../utils/versioning';
 import { deleteApkBlob, downloadTwaManifest, loadApkBlob, saveApkBlob } from '../utils/storage';
+import { downloadCentralSyncJson, resolveSyncEndpoint } from '../utils/githubSync';
 import { BrandLogo } from '../components/BrandLogo';
 
 interface AdminPanelPageProps {
   db: AppDatabase;
   onUpdateDatabase: (updater: (prev: AppDatabase) => AppDatabase) => void;
+  onSyncNow: () => void;
+  isSyncing: boolean;
 }
 
 const ADMIN_PASSCODE = '2011';
@@ -67,14 +81,23 @@ async function readAndOptimizeImage(file: File, maxDim: number): Promise<string>
   });
 }
 
-export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateDatabase }) => {
+export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({
+  db,
+  onUpdateDatabase,
+  onSyncNow,
+  isSyncing,
+}) => {
   const [authenticated, setAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Editable branding draft
+  // Editable branding & GitHub sync draft
   const [draft, setDraft] = useState<AdminBranding>(db.branding);
+  const [syncDraft, setSyncDraft] = useState<GitHubSyncConfig>(db.syncConfig);
+  const [annTitle, setAnnTitle] = useState('');
+  const [annBody, setAnnBody] = useState('');
+  const [annPriority, setAnnPriority] = useState<'penting' | 'info'>('info');
   const [logoUrlInput, setLogoUrlInput] = useState('');
   const [thumbUrlInput, setThumbUrlInput] = useState('');
   const [hasLocalApkBlob, setHasLocalApkBlob] = useState(false);
@@ -103,6 +126,7 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateData
       setAuthError('');
       setPasswordInput('');
       setDraft(db.branding);
+      setSyncDraft(db.syncConfig);
     } else {
       setAuthError('Password Admin salah. Masukkan kode akses resmi Admin.');
     }
@@ -253,6 +277,65 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateData
         ? 'Perubahan branding berhasil disimpan dan otomatis dicatat ke Riwayat Versi Aplikasi.'
         : 'Konfigurasi berhasil disimpan.'
     );
+  };
+
+  const handleSaveGitHubConfig = () => {
+    onUpdateDatabase((prev) =>
+      appendAutomatedVersionRecord(
+        {
+          ...prev,
+          syncConfig: {
+            ...prev.syncConfig,
+            repoOwner: syncDraft.repoOwner.trim(),
+            repoName: syncDraft.repoName.trim(),
+            branch: syncDraft.branch.trim() || 'main',
+            manifestPath: syncDraft.manifestPath.trim() || 'public/sync/central-data.json',
+            customSyncUrl: syncDraft.customSyncUrl?.trim() || null,
+          },
+        },
+        {
+          bump: 'patch',
+          title: 'Konfigurasi Sinkronisasi GitHub Pusat',
+          source: 'admin_update',
+          changes: [
+            {
+              type: 'Admin',
+              summary: `Admin memperbarui sumber sinkronisasi Mode Online: ${
+                resolveSyncEndpoint(syncDraft).sourceLabel
+              }.`,
+            },
+          ],
+        }
+      )
+    );
+    setFeedback('Konfigurasi Repository GitHub untuk Mode Online berhasil disimpan.');
+  };
+
+  const handleAddAnnouncement = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!annTitle.trim() || !annBody.trim()) return;
+    const created: CentralAnnouncement = {
+      id: `ann_${Date.now()}`,
+      title: annTitle.trim(),
+      body: annBody.trim(),
+      date: new Date().toISOString().slice(0, 10),
+      priority: annPriority,
+      author: `Admin ${draft.institutionName || 'Pesantren Trubus Iman'}`,
+    };
+    onUpdateDatabase((prev) => ({
+      ...prev,
+      announcements: [created, ...prev.announcements],
+    }));
+    setAnnTitle('');
+    setAnnBody('');
+    setFeedback('Pengumuman pusat ditambahkan. Unduh central-data.json untuk diunggah ke GitHub agar diterima semua guru.');
+  };
+
+  const handleDeleteAnnouncement = (id: string) => {
+    onUpdateDatabase((prev) => ({
+      ...prev,
+      announcements: prev.announcements.filter((a) => a.id !== id),
+    }));
   };
 
   const handleAddPendingChange = () => {
@@ -736,6 +819,187 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateData
             <Save className="w-4 h-4" />
             Simpan Pengaturan APK
           </button>
+        </div>
+      </section>
+
+      {/* 3C. Dual Mode GitHub Online Sync & Central Announcements Publisher */}
+      <section className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
+              <Cloud className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Sinkronisasi GitHub &amp; Data Pusat (Mode Online)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Saat guru menekan tombol <strong>Online</strong>, aplikasi otomatis menarik pembaruan aplikasi, data santri inti, dan pengumuman pusat dari repository GitHub ini.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => downloadCentralSyncJson(db)}
+            className="min-h-[40px] px-4 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+          >
+            <Download className="w-4 h-4" />
+            Unduh central-data.json untuk GitHub
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              GitHub Owner / Organisasi
+            </label>
+            <input
+              type="text"
+              value={syncDraft.repoOwner}
+              onChange={(e) => setSyncDraft((p) => ({ ...p, repoOwner: e.target.value }))}
+              placeholder="pesantren-trubus-iman"
+              className="w-full min-h-[42px] rounded-xl border border-slate-200 px-3 text-xs font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              Nama Repository
+            </label>
+            <input
+              type="text"
+              value={syncDraft.repoName}
+              onChange={(e) => setSyncDraft((p) => ({ ...p, repoName: e.target.value }))}
+              placeholder="adm-guru-trubus-iman"
+              className="w-full min-h-[42px] rounded-xl border border-slate-200 px-3 text-xs font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Branch</label>
+            <input
+              type="text"
+              value={syncDraft.branch}
+              onChange={(e) => setSyncDraft((p) => ({ ...p, branch: e.target.value }))}
+              placeholder="main"
+              className="w-full min-h-[42px] rounded-xl border border-slate-200 px-3 text-xs font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              Path Manifest JSON
+            </label>
+            <input
+              type="text"
+              value={syncDraft.manifestPath}
+              onChange={(e) => setSyncDraft((p) => ({ ...p, manifestPath: e.target.value }))}
+              placeholder="public/sync/central-data.json"
+              className="w-full min-h-[42px] rounded-xl border border-slate-200 px-3 text-xs font-mono"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-600 mb-1">
+            Atau URL JSON Sinkronisasi Langsung HTTPS (opsional, menimpa konfigurasi repo di atas)
+          </label>
+          <input
+            type="url"
+            value={syncDraft.customSyncUrl || ''}
+            onChange={(e) =>
+              setSyncDraft((p) => ({ ...p, customSyncUrl: e.target.value || null }))
+            }
+            placeholder="https://raw.githubusercontent.com/owner/repo/main/public/sync/central-data.json"
+            className="w-full min-h-[42px] rounded-xl border border-slate-200 px-3 text-xs font-mono"
+          />
+          <p className="mt-1 text-[11px] text-slate-400">
+            Sumber aktif: {resolveSyncEndpoint(syncDraft).sourceLabel}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSaveGitHubConfig}
+            className="min-h-[42px] px-5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+          >
+            <Save className="w-4 h-4" />
+            Simpan Konfigurasi GitHub
+          </button>
+          <button
+            type="button"
+            onClick={onSyncNow}
+            disabled={isSyncing}
+            className="min-h-[42px] px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold inline-flex items-center gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Menyinkronkan...' : 'Uji Sinkronisasi Sekarang'}
+          </button>
+        </div>
+
+        {/* Central Announcements Manager */}
+        <div className="pt-4 border-t border-slate-100 space-y-3">
+          <div className="flex items-center gap-2">
+            <Megaphone className="w-4 h-4 text-amber-700" />
+            <h3 className="text-sm font-bold text-slate-900">
+              Kelola Pengumuman / Info Pusat ({db.announcements.length})
+            </h3>
+          </div>
+
+          <form onSubmit={handleAddAnnouncement} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+            <select
+              value={annPriority}
+              onChange={(e) => setAnnPriority(e.target.value as 'penting' | 'info')}
+              className="sm:col-span-3 min-h-[40px] rounded-xl border border-slate-200 px-3 text-xs bg-white"
+            >
+              <option value="info">Info Pusat</option>
+              <option value="penting">Penting</option>
+            </select>
+            <input
+              type="text"
+              required
+              value={annTitle}
+              onChange={(e) => setAnnTitle(e.target.value)}
+              placeholder="Judul pengumuman pusat..."
+              className="sm:col-span-9 min-h-[40px] rounded-xl border border-slate-200 px-3 text-xs"
+            />
+            <textarea
+              rows={2}
+              required
+              value={annBody}
+              onChange={(e) => setAnnBody(e.target.value)}
+              placeholder="Isi pengumuman atau informasi penting dari Pesantren Trubus Iman..."
+              className="sm:col-span-10 rounded-xl border border-slate-200 p-2.5 text-xs"
+            />
+            <button
+              type="submit"
+              className="sm:col-span-2 min-h-[40px] rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold"
+            >
+              Tambah Info
+            </button>
+          </form>
+
+          {db.announcements.length > 0 && (
+            <div className="rounded-xl border border-slate-200 divide-y divide-slate-100">
+              {db.announcements.map((a) => (
+                <div key={a.id} className="px-3.5 py-2.5 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900">
+                      [{a.priority === 'penting' ? 'Penting' : 'Info'}] {a.title}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{a.body}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAnnouncement(a.id)}
+                    className="w-8 h-8 rounded-lg hover:bg-rose-50 hover:text-rose-700 text-slate-400 flex items-center justify-center shrink-0"
+                    aria-label="Hapus pengumuman"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

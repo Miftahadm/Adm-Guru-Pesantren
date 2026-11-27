@@ -212,6 +212,31 @@ export interface VersionRecord {
   changes: VersionChangeItem[];
 }
 
+export type AppMode = 'offline' | 'online';
+
+export interface CentralAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  date: string;
+  priority: 'penting' | 'info';
+  author: string;
+}
+
+export interface GitHubSyncConfig {
+  mode: AppMode;
+  repoOwner: string;
+  repoName: string;
+  branch: string;
+  manifestPath: string;
+  customSyncUrl: string | null;
+  lastSyncAt: string | null;
+  lastSyncedRemoteVersion: string | null;
+  lastSyncStatus: 'idle' | 'syncing' | 'success' | 'error';
+  lastSyncMessage: string | null;
+  latestReleaseUrl: string | null;
+}
+
 export interface AppDatabase {
   schemaVersion: number;
   installedAppVersion: string;
@@ -227,6 +252,8 @@ export interface AppDatabase {
   extracurriculars: ExtracurricularProgram[];
   reminders: ReminderNote[];
   branding: AdminBranding;
+  syncConfig: GitHubSyncConfig;
+  announcements: CentralAnnouncement[];
   versionHistory: VersionRecord[];
 }
 

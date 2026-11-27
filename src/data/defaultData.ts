@@ -1,7 +1,7 @@
 import { AppDatabase, VersionRecord } from '../types';
 
-export const CURRENT_APP_VERSION = '1.3.0';
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_APP_VERSION = '1.4.0';
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export const DAY_NAMES: Record<number, string> = {
   1: 'Senin',
@@ -100,6 +100,17 @@ export const SYSTEM_RELEASE_MANIFEST: Omit<VersionRecord, 'recordedOnDeviceAt'>[
       { type: 'Added', summary: 'Tombol Share APK (WA) pada Beranda untuk mengunduh file APK Android otomatis dan membagikannya via WhatsApp.' },
       { type: 'Added', summary: 'Pengelolaan file/tautan APK Android resmi di Panel Admin (Password 2011) dengan penyimpanan biner IndexedDB.' },
       { type: 'Added', summary: 'Ekspor konfigurasi twa-manifest.json siap pakai untuk kompilasi APK resmi melalui PWABuilder / Bubblewrap.' },
+    ],
+  },
+  {
+    version: '1.4.0',
+    releasedAt: '2026-11-27',
+    title: 'Dual Mode Offline (Perangkat/APK) & Online (Sinkronisasi GitHub)',
+    source: 'system_release',
+    changes: [
+      { type: 'Added', summary: 'Switcher Dual Mode (Offline & Online) di Beranda dan Navigasi: mode Offline memakai database perangkat lokal secara penuh, mode Online menyinkronkan pembaruan dari GitHub otomatis.' },
+      { type: 'Added', summary: 'Sinkronisasi otomatis dari GitHub meliputi pembaruan Service Worker/aplikasi, rilis APK terbaru, data inti (kelas, santri, jenis kegiatan non-kelas), dan pengumuman pusat pesantren.' },
+      { type: 'Added', summary: 'Pengaturan Repository GitHub & ekspor central-data.json di Panel Admin (Password 2011).' },
     ],
   },
 ];
@@ -395,6 +406,29 @@ export function createInitialDatabase(): AppDatabase {
       apkFileSize: null,
       updatedAt: nowIso,
     },
+    syncConfig: {
+      mode: 'offline',
+      repoOwner: '',
+      repoName: '',
+      branch: 'main',
+      manifestPath: 'public/sync/central-data.json',
+      customSyncUrl: null,
+      lastSyncAt: null,
+      lastSyncedRemoteVersion: null,
+      lastSyncStatus: 'idle',
+      lastSyncMessage: null,
+      latestReleaseUrl: null,
+    },
+    announcements: [
+      {
+        id: 'ann_default_1',
+        title: 'Selamat Datang di Adm Guru Pesantren Trubus Iman',
+        body: 'Aplikasi berjalan penuh secara Offline di perangkat Anda. Klik tombol "Online" kapan saja untuk menyinkronkan data santri inti, pembaruan aplikasi, dan pengumuman resmi dari GitHub pusat.',
+        date: today,
+        priority: 'info',
+        author: 'Admin Pusat Pesantren Trubus Iman',
+      },
+    ],
     versionHistory,
   };
 }

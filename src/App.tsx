@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { registerSW } from 'virtual:pwa-register';
-import { NavTab, ScheduleItem } from './types';
+import { AppMode, NavTab, ScheduleItem } from './types';
 import { getTodayDayOfWeek } from './data/defaultData';
 import { useAppStore } from './hooks/useAppStore';
 import { buildAlarmSpeechText, sendBrowserNotification } from './utils/audioAlarm';
+import { runGitHubSync } from './utils/githubSync';
 import { Layout } from './components/Layout';
 import { AlarmModal } from './components/AlarmModal';
 import { OnboardingModal } from './components/OnboardingModal';
@@ -31,9 +32,60 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [activeAlarm, setActiveAlarm] = useState<ScheduleItem | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [swUpdateReady, setSwUpdateReady] = useState(false);
 
   const triggeredKeyRef = useRef<Set<string>>(new Set());
   const snoozeTimerRef = useRef<number | null>(null);
+
+  const handleSyncNow = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const result = await runGitHubSync(db);
+      replaceDb(result.updatedDb);
+      if (result.swUpdateFound) {
+        setSwUpdateReady(true);
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [db, replaceDb]);
+
+  const handleSelectMode = useCallback(
+    async (mode: AppMode) => {
+      if (mode === 'offline') {
+        updateDb((prev) => ({
+          ...prev,
+          syncConfig: {
+            ...prev.syncConfig,
+            mode: 'offline',
+            lastSyncMessage: 'Mode Offline aktif · Seluruh data disimpan & diproses langsung di perangkat.',
+          },
+        }));
+        return;
+      }
+
+      // Mode Online selected: switch mode and automatically synchronize with GitHub
+      setIsSyncing(true);
+      try {
+        const result = await runGitHubSync({
+          ...db,
+          syncConfig: {
+            ...db.syncConfig,
+            mode: 'online',
+            lastSyncStatus: 'syncing',
+          },
+        });
+        replaceDb(result.updatedDb);
+        if (result.swUpdateFound) {
+          setSwUpdateReady(true);
+        }
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [db, replaceDb, updateDb]
+  );
 
   // Register PWA Service Worker for full offline caching & automatic updates
   useEffect(() => {
@@ -117,6 +169,8 @@ export default function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenProfileModal={() => setProfileModalOpen(true)}
+        onSelectMode={handleSelectMode}
+        isSyncing={isSyncing}
         upgradedFrom={upgradedFrom}
         onDismissUpgrade={dismissUpgradeNotice}
       >
@@ -126,6 +180,10 @@ export default function App() {
             onNavigate={setActiveTab}
             onTriggerAlarmPreview={(sch) => setActiveAlarm(sch)}
             onOpenProfile={() => setProfileModalOpen(true)}
+            onSelectMode={handleSelectMode}
+            onSyncNow={handleSyncNow}
+            isSyncing={isSyncing}
+            swUpdateReady={swUpdateReady}
           />
         )}
 
@@ -198,7 +256,12 @@ export default function App() {
         )}
 
         {activeTab === 'admin' && (
-          <AdminPanelPage db={db} onUpdateDatabase={updateDb} />
+          <AdminPanelPage
+            db={db}
+            onUpdateDatabase={updateDb}
+            onSyncNow={handleSyncNow}
+            isSyncing={isSyncing}
+          />
         )}
 
         {activeTab === 'versions' && (

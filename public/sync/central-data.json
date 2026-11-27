@@ -1,0 +1,77 @@
+{
+  "appVersion": "1.4.0",
+  "releasedAt": "2026-11-27",
+  "releaseTitle": "Sinkronisasi Data Pusat Pesantren Trubus Iman",
+  "releaseNotes": [
+    "Pembaruan data santri inti Semester Ganjil TA 2026/2027 dari pusat.",
+    "Penambahan pengumuman resmi agenda Pesantren Trubus Iman."
+  ],
+  "apkDownloadUrl": null,
+  "branding": {
+    "foundationName": "YAYASAN PENDIDIKAN ISLAM TRUBUS IMAN",
+    "institutionName": "PONDOK PESANTREN TRUBUS IMAN",
+    "address": "Jl. Padang Pangrapat, Kec. Tanah Grogot, Kab. Paser, Kalimantan Timur",
+    "contactInfo": "Telp. (0543) 21000 · Website: trubusiman.ponpes.id · Email: admin@trubusiman.ponpes.id"
+  },
+  "classes": [
+    {
+      "id": "cls_7a",
+      "level": "Kelas 7",
+      "rombel": "A",
+      "name": "Kelas 7A",
+      "subjects": ["Matematika", "IPA", "Bahasa Indonesia", "Bahasa Arab"]
+    },
+    {
+      "id": "cls_7b",
+      "level": "Kelas 7",
+      "rombel": "B",
+      "name": "Kelas 7B",
+      "subjects": ["Matematika", "IPA", "Pendidikan Pancasila"]
+    }
+  ],
+  "students": [
+    { "id": "stu_1", "classId": "cls_7a", "nis": "20260701", "name": "Aisyah Putri Rahmawati", "gender": "P" },
+    { "id": "stu_2", "classId": "cls_7a", "nis": "20260702", "name": "Bima Saputra Pratama", "gender": "L" },
+    { "id": "stu_3", "classId": "cls_7a", "nis": "20260703", "name": "Citra Lestari", "gender": "P" },
+    { "id": "stu_4", "classId": "cls_7a", "nis": "20260704", "name": "Dafa Pratama Putra", "gender": "L" },
+    { "id": "stu_5", "classId": "cls_7a", "nis": "20260705", "name": "Elisa Maharani", "gender": "P" },
+    { "id": "stu_6", "classId": "cls_7a", "nis": "20260706", "name": "Fajar Nugroho", "gender": "L" },
+    { "id": "stu_7", "classId": "cls_7a", "nis": "20260707", "name": "Gita Anjani", "gender": "P" },
+    { "id": "stu_8", "classId": "cls_7a", "nis": "20260708", "name": "Hafiz Maulana", "gender": "L" },
+    { "id": "stu_15", "classId": "cls_7a", "nis": "20260709", "name": "Intan Permata Sari", "gender": "P" },
+    { "id": "stu_9", "classId": "cls_7b", "nis": "20260721", "name": "Arif Kurniawan", "gender": "L" },
+    { "id": "stu_10", "classId": "cls_7b", "nis": "20260722", "name": "Bunga Melati", "gender": "P" },
+    { "id": "stu_11", "classId": "cls_7b", "nis": "20260723", "name": "Cahyo Utomo", "gender": "L" },
+    { "id": "stu_12", "classId": "cls_7b", "nis": "20260724", "name": "Nadia Rahma", "gender": "P" },
+    { "id": "stu_13", "classId": "cls_7b", "nis": "20260725", "name": "Raka Firmansyah", "gender": "L" },
+    { "id": "stu_14", "classId": "cls_7b", "nis": "20260726", "name": "Salsa Amelia", "gender": "P" },
+    { "id": "stu_16", "classId": "cls_7b", "nis": "20260727", "name": "Tegar Wicaksono", "gender": "L" }
+  ],
+  "nonClassTypes": [
+    "Piket Guru & Kedisiplinan",
+    "Rapat Dewan Asatidz",
+    "Pembinaan Asrama Santri",
+    "Kunjungan / Komunikasi Wali Santri",
+    "Penyusunan Modul & Administrasi",
+    "Pelatihan / MGMP / KKG",
+    "Pendampingan Lomba / Kegiatan Pesantren"
+  ],
+  "announcements": [
+    {
+      "id": "ann_2026_11_01",
+      "title": "Jadwal Penilaian Akhir Semester (PAS) Ganjil 2026/2027",
+      "body": "Seluruh Ustadz/Ustadzah dimohon melengkapi rekap absensi, daftar nilai harian, dan jurnal mengajar (Di Kelas & Non Kelas) paling lambat H-3 sebelum PAS.",
+      "date": "2026-11-27",
+      "priority": "penting",
+      "author": "Bagian Kurikulum Pesantren Trubus Iman"
+    },
+    {
+      "id": "ann_2026_11_02",
+      "title": "Pembaruan Data Santri Inti via Mode Online",
+      "body": "Data santri mutasi/baru Semester Ganjil telah disinkronkan dari pusat. Silakan aktifkan Mode Online secara berkala untuk mendapatkan pembaruan data inti dan info terbaru.",
+      "date": "2026-11-27",
+      "priority": "info",
+      "author": "Admin Pusat Pesantren Trubus Iman"
+    }
+  ]
+}

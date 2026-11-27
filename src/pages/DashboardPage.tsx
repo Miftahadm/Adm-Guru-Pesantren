@@ -8,17 +8,20 @@ import {
   CheckSquare,
   ChevronRight,
   Clock,
+  Cloud,
   FileSpreadsheet,
   HardDrive,
+  Megaphone,
+  RefreshCw,
   Share2,
   Shield,
   Sparkles,
   Users,
   Volume2,
 } from 'lucide-react';
-import { AppDatabase, NavTab, ScheduleItem } from '../types';
+import { AppDatabase, AppMode, NavTab, ScheduleItem } from '../types';
 import { DAY_NAMES, formatLocalDateISO, getTodayDayOfWeek } from '../data/defaultData';
-import { formatTodayIndonesian } from '../utils/exportOfficial';
+import { formatIndonesianDate, formatTodayIndonesian } from '../utils/exportOfficial';
 import { BrandLogo } from '../components/BrandLogo';
 import { ShareApkModal } from '../components/ShareApkModal';
 
@@ -27,6 +30,10 @@ interface DashboardPageProps {
   onNavigate: (tab: NavTab) => void;
   onTriggerAlarmPreview: (schedule: ScheduleItem) => void;
   onOpenProfile: () => void;
+  onSelectMode: (mode: AppMode) => void;
+  onSyncNow: () => void;
+  isSyncing: boolean;
+  swUpdateReady: boolean;
 }
 
 function getTimeGreeting(): string {
@@ -42,6 +49,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigate,
   onTriggerAlarmPreview,
   onOpenProfile,
+  onSelectMode,
+  onSyncNow,
+  isSyncing,
+  swUpdateReady,
 }) => {
   const [shareModalOpen, setShareModalOpen] = React.useState(false);
   const todayDow = getTodayDayOfWeek();
@@ -187,6 +198,104 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             >
               Atur Jadwal
             </button>
+          </div>
+        )}
+      </section>
+
+      {/* Dual Mode Bar: Offline (Perangkat/APK) vs Online (Sinkronisasi GitHub) */}
+      <section className="rounded-2xl bg-white border border-slate-200/90 p-4 sm:p-5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-slate-900">
+              Mode Operasi:{' '}
+              <span className={db.syncConfig.mode === 'online' ? 'text-emerald-800' : 'text-slate-700'}>
+                {db.syncConfig.mode === 'online'
+                  ? 'Online (Sinkronisasi GitHub)'
+                  : 'Offline (Penyimpanan Perangkat)'}
+              </span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+              {db.syncConfig.mode === 'online'
+                ? 'Terhubung ke pusat GitHub untuk pembaruan aplikasi, data santri inti, dan pengumuman resmi.'
+                : 'Berjalan 100% lokal di perangkat Android/HP Anda tanpa internet. Klik Online kapan saja untuk menyinkronkan update GitHub.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="inline-flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => onSelectMode('offline')}
+                className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                  db.syncConfig.mode === 'offline'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <HardDrive className="w-4 h-4 shrink-0" />
+                Offline
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectMode('online')}
+                disabled={isSyncing}
+                className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                  db.syncConfig.mode === 'online'
+                    ? 'bg-emerald-800 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {isSyncing ? (
+                  <RefreshCw className="w-4 h-4 shrink-0 animate-spin" />
+                ) : (
+                  <Cloud className="w-4 h-4 shrink-0" />
+                )}
+                {isSyncing ? 'Menyinkronkan...' : 'Online'}
+              </button>
+            </div>
+
+            {db.syncConfig.mode === 'online' && (
+              <button
+                type="button"
+                onClick={onSyncNow}
+                disabled={isSyncing}
+                className="min-h-[42px] px-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap"
+                title="Sinkron ulang dari GitHub sekarang"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Sinkron Ulang</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Sync Feedback Line */}
+        {(db.syncConfig.lastSyncMessage || db.syncConfig.lastSyncAt || swUpdateReady) && (
+          <div className="pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <p
+              className={
+                db.syncConfig.lastSyncStatus === 'error'
+                  ? 'text-rose-700 font-medium'
+                  : 'text-slate-600'
+              }
+            >
+              {db.syncConfig.lastSyncMessage || 'Belum pernah disinkronkan dengan GitHub.'}
+              {db.syncConfig.lastSyncAt && (
+                <span className="text-slate-400 tabular-nums">
+                  {' · '}
+                  Terakhir: {new Date(db.syncConfig.lastSyncAt).toLocaleString('id-ID')}
+                </span>
+              )}
+            </p>
+            {swUpdateReady && (
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="min-h-[34px] px-3 rounded-lg bg-emerald-800 text-white text-xs font-semibold whitespace-nowrap self-start sm:self-auto"
+              >
+                Muat Ulang Versi Baru
+              </button>
+            )}
           </div>
         )}
       </section>
@@ -343,6 +452,57 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         {/* Right Summary Panel */}
         <div className="lg:col-span-4 space-y-5">
+          {/* Pengumuman & Info Pusat Pesantren (Synced from GitHub) */}
+          <div className="rounded-2xl bg-white border border-slate-200/90 p-5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-emerald-800 shrink-0" />
+                <h3 className="text-sm font-bold text-slate-900">Info &amp; Pengumuman Pusat</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSelectMode('online')}
+                disabled={isSyncing}
+                className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 whitespace-nowrap"
+              >
+                {isSyncing ? 'Memuat...' : 'Perbarui'}
+              </button>
+            </div>
+            {db.announcements.length === 0 ? (
+              <p className="mt-3 text-xs text-slate-500">
+                Belum ada pengumuman pusat. Aktifkan mode Online untuk mengambil pengumuman dari GitHub.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {db.announcements.slice(0, 3).map((ann) => (
+                  <div
+                    key={ann.id}
+                    className="pb-3 last:pb-0 border-b last:border-b-0 border-slate-100"
+                  >
+                    <p className="text-[11px] text-slate-500 tabular-nums">
+                      <span
+                        className={
+                          ann.priority === 'penting'
+                            ? 'font-bold text-amber-800'
+                            : 'font-semibold text-emerald-800'
+                        }
+                      >
+                        {ann.priority === 'penting' ? 'Penting' : 'Info Pusat'}
+                      </span>
+                      {' · '}
+                      {formatIndonesianDate(ann.date)}
+                    </p>
+                    <p className="text-sm font-semibold text-slate-900 mt-0.5 leading-snug">
+                      {ann.title}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">{ann.body}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">{ann.author}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Ringkasan Jurnal Hari Ini */}
           <div className="rounded-2xl bg-white border border-slate-200/90 p-5">
             <div className="flex items-center justify-between gap-2">

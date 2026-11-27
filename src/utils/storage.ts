@@ -183,6 +183,8 @@ export async function loadDatabase(): Promise<{
     ...raw,
     profile: { ...defaults.profile, ...(raw.profile || {}) },
     branding: { ...defaults.branding, ...(raw.branding || {}) },
+    syncConfig: { ...defaults.syncConfig, ...(raw.syncConfig || {}) },
+    announcements: Array.isArray(raw.announcements) ? raw.announcements : defaults.announcements,
     classes: Array.isArray(raw.classes) ? raw.classes : defaults.classes,
     students: Array.isArray(raw.students) ? raw.students : defaults.students,
     schedules: Array.isArray(raw.schedules) ? raw.schedules : defaults.schedules,
@@ -291,6 +293,10 @@ export async function parseBackupFile(file: File): Promise<AppDatabase> {
     ...candidate,
     profile: { ...defaults.profile, ...candidate.profile },
     branding: { ...defaults.branding, ...(candidate.branding || {}) },
+    syncConfig: { ...defaults.syncConfig, ...(candidate.syncConfig || {}) },
+    announcements: Array.isArray(candidate.announcements)
+      ? candidate.announcements
+      : defaults.announcements,
     classes: candidate.classes,
     students: Array.isArray(candidate.students) ? candidate.students : [],
     schedules: Array.isArray(candidate.schedules) ? candidate.schedules : [],
