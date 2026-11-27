@@ -10,6 +10,7 @@ import {
   Clock,
   FileSpreadsheet,
   HardDrive,
+  Share2,
   Shield,
   Sparkles,
   Users,
@@ -19,6 +20,7 @@ import { AppDatabase, NavTab, ScheduleItem } from '../types';
 import { DAY_NAMES, formatLocalDateISO, getTodayDayOfWeek } from '../data/defaultData';
 import { formatTodayIndonesian } from '../utils/exportOfficial';
 import { BrandLogo } from '../components/BrandLogo';
+import { ShareApkModal } from '../components/ShareApkModal';
 
 interface DashboardPageProps {
   db: AppDatabase;
@@ -41,6 +43,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onTriggerAlarmPreview,
   onOpenProfile,
 }) => {
+  const [shareModalOpen, setShareModalOpen] = React.useState(false);
   const todayDow = getTodayDayOfWeek();
   const todayISO = formatLocalDateISO();
   const now = new Date();
@@ -100,17 +103,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={() => setShareModalOpen(true)}
+              className="min-h-[42px] px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs sm:text-sm font-semibold text-white inline-flex items-center gap-1.5 transition-colors whitespace-nowrap"
+            >
+              <Share2 className="w-4 h-4 text-amber-300" />
+              Share APK (WA)
+            </button>
+            <button
+              type="button"
               onClick={onOpenProfile}
               className="min-h-[42px] px-4 rounded-xl bg-white/15 hover:bg-white/25 border border-white/15 text-xs sm:text-sm font-medium text-white transition-colors whitespace-nowrap"
             >
-              Edit Biodata &amp; Kelas
+              Edit Biodata
             </button>
             <button
               type="button"
               onClick={() => onNavigate('reports')}
               className="min-h-[42px] px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap"
             >
-              Rekap &amp; Unduh Resmi
+              Rekap Resmi
             </button>
           </div>
         </div>
@@ -401,6 +412,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
       </div>
+      <ShareApkModal
+        open={shareModalOpen}
+        db={db}
+        onClose={() => setShareModalOpen(false)}
+        onOpenAdmin={() => onNavigate('admin')}
+      />
     </div>
   );
 };

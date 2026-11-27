@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  FileCode2,
   Globe,
   Image as ImageIcon,
   Lock,
@@ -11,11 +12,14 @@ import {
   RotateCcw,
   Save,
   Shield,
+  Smartphone,
   Sparkles,
+  Trash2,
   Upload,
 } from 'lucide-react';
 import { AdminBranding, AppDatabase, VersionChangeItem, VersionChangeType } from '../types';
 import { appendAutomatedVersionRecord } from '../utils/versioning';
+import { deleteApkBlob, downloadTwaManifest, loadApkBlob, saveApkBlob } from '../utils/storage';
 import { BrandLogo } from '../components/BrandLogo';
 
 interface AdminPanelPageProps {
@@ -73,6 +77,7 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateData
   const [draft, setDraft] = useState<AdminBranding>(db.branding);
   const [logoUrlInput, setLogoUrlInput] = useState('');
   const [thumbUrlInput, setThumbUrlInput] = useState('');
+  const [hasLocalApkBlob, setHasLocalApkBlob] = useState(false);
   const [feedback, setFeedback] = useState('');
 
   // Manual Admin Release Note builder (auto-increments SemVer)
@@ -84,6 +89,12 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateData
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const thumbInputRef = useRef<HTMLInputElement>(null);
+  const apkInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (!authenticated) return;
+    loadApkBlob().then((b) => setHasLocalApkBlob(Boolean(b)));
+  }, [authenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,6 +134,62 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateData
     e.target.value = '';
   };
 
+  const handleApkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ok = await saveApkBlob(file);
+    if (ok) {
+      const nowIso = new Date().toISOString();
+      const updatedBranding: AdminBranding = {
+        ...draft,
+        apkFileName: file.name.endsWith('.apk') ? file.name : `${file.name}.apk`,
+        apkFileSize: file.size,
+        apkUploadedAt: nowIso,
+        updatedAt: nowIso,
+      };
+      setDraft(updatedBranding);
+      setHasLocalApkBlob(true);
+      onUpdateDatabase((prev) =>
+        appendAutomatedVersionRecord(
+          { ...prev, branding: updatedBranding },
+          {
+            bump: 'patch',
+            title: 'Unggah File APK Android Resmi',
+            source: 'admin_update',
+            changes: [
+              {
+                type: 'Admin',
+                summary: `Admin mengunggah file APK "${updatedBranding.apkFileName}" (${(
+                  file.size /
+                  (1024 * 1024)
+                ).toFixed(2)} MB) untuk fitur Share APK (WA) di Beranda.`,
+              },
+            ],
+          }
+        )
+      );
+      setFeedback(`File APK "${updatedBranding.apkFileName}" berhasil disimpan di perangkat dan siap diunduh otomatis dari tombol Share APK (WA) di Beranda.`);
+    } else {
+      setFeedback('Gagal menyimpan file APK ke penyimpanan perangkat (IndexedDB).');
+    }
+    e.target.value = '';
+  };
+
+  const handleDeleteApk = async () => {
+    await deleteApkBlob();
+    setHasLocalApkBlob(false);
+    const updatedBranding: AdminBranding = {
+      ...draft,
+      apkDownloadUrl: null,
+      apkUploadedAt: null,
+      apkFileSize: null,
+      updatedAt: new Date().toISOString(),
+    };
+    setDraft(updatedBranding);
+    onUpdateDatabase((prev) => ({ ...prev, branding: updatedBranding }));
+    setFeedback('File/tautan APK Android berhasil dihapus dari konfigurasi Admin.');
+  };
+
   const handleSaveBranding = () => {
     const changes: VersionChangeItem[] = [];
     if (draft.logoDataUrl !== db.branding.logoDataUrl) {
@@ -151,6 +218,15 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateData
       changes.push({
         type: 'Updated',
         summary: 'Admin memperbarui identitas resmi Kop Surat & tanda tangan Pesantren Trubus Iman.',
+      });
+    }
+    if (
+      draft.apkDownloadUrl !== db.branding.apkDownloadUrl ||
+      draft.apkFileName !== db.branding.apkFileName
+    ) {
+      changes.push({
+        type: 'Admin',
+        summary: 'Admin memperbarui tautan unduhan/nama file APK Android untuk fitur Share WA.',
       });
     }
 
@@ -539,7 +615,126 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ db, onUpdateData
             className="min-h-[46px] px-6 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-xs"
           >
             <Save className="w-4 h-4" />
-            Simpan Perubahan Branding &amp; Kop Surat
+            Simpan Perubahan Branding, Kop Surat &amp; Tautan APK
+          </button>
+        </div>
+      </section>
+
+      {/* 3B. File APK Android Management for Dashboard Share (WA) */}
+      <section className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
+              <Smartphone className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Paket File APK Android (Tombol Share WA di Beranda)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Unggah file .apk resmi atau masukkan tautan unduhan langsung agar tombol Share APK (WA) di Beranda otomatis mengunduh file APK.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-slate-500">Status Paket APK Saat Ini</p>
+            <p className="text-sm font-bold text-slate-900 truncate mt-0.5">
+              {hasLocalApkBlob
+                ? `${draft.apkFileName} (Tersimpan Lokal)`
+                : draft.apkDownloadUrl
+                  ? `${draft.apkFileName} (Tautan Unduhan Online)`
+                  : 'Belum ada file .apk yang diunggah'}
+            </p>
+            {draft.apkFileSize && hasLocalApkBlob && (
+              <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                Ukuran: {(draft.apkFileSize / (1024 * 1024)).toFixed(2)} MB
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <input
+              ref={apkInputRef}
+              type="file"
+              accept=".apk,application/vnd.android.package-archive"
+              onChange={handleApkUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => apkInputRef.current?.click()}
+              className="min-h-[40px] px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Unggah File .APK
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                downloadTwaManifest(
+                  draft.appName,
+                  db.installedAppVersion,
+                  typeof window !== 'undefined' ? window.location.origin : 'https://trubusiman.ponpes.id'
+                )
+              }
+              className="min-h-[40px] px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-xs font-semibold text-slate-700 inline-flex items-center gap-1.5"
+            >
+              <FileCode2 className="w-3.5 h-3.5" />
+              twa-manifest.json
+            </button>
+            {(hasLocalApkBlob || draft.apkDownloadUrl) && (
+              <button
+                type="button"
+                onClick={handleDeleteApk}
+                className="min-h-[40px] px-3 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-xs font-semibold text-rose-700 inline-flex items-center gap-1"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Hapus
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              Nama File Unduhan (.apk)
+            </label>
+            <input
+              type="text"
+              value={draft.apkFileName || ''}
+              onChange={(e) => setDraft((p) => ({ ...p, apkFileName: e.target.value }))}
+              placeholder="Adm_Guru_Pesantren_Trubus_Iman.apk"
+              className="w-full min-h-[42px] rounded-xl border border-slate-200 px-3 text-xs font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">
+              Tautan Unduh Langsung APK Online (opsional)
+            </label>
+            <input
+              type="url"
+              value={draft.apkDownloadUrl || ''}
+              onChange={(e) =>
+                setDraft((p) => ({ ...p, apkDownloadUrl: e.target.value.trim() || null }))
+              }
+              placeholder="https://.../Adm_Guru_Pesantren_Trubus_Iman.apk"
+              className="w-full min-h-[42px] rounded-xl border border-slate-200 px-3 text-xs"
+            />
+          </div>
+        </div>
+
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={handleSaveBranding}
+            className="min-h-[42px] px-5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+          >
+            <Save className="w-4 h-4" />
+            Simpan Pengaturan APK
           </button>
         </div>
       </section>

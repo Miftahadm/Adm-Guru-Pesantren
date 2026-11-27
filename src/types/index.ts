@@ -189,6 +189,10 @@ export interface AdminBranding {
   principalTitle: string;
   principalNip: string;
   city: string;
+  apkDownloadUrl: string | null;
+  apkFileName: string;
+  apkUploadedAt: string | null;
+  apkFileSize: number | null;
   updatedAt: string;
 }
 

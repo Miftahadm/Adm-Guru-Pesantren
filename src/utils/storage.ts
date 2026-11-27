@@ -5,21 +5,26 @@ import { reconcileAppVersion } from './versioning';
 const LS_KEY = 'adm_guru_trubus_iman_db_v2';
 const IDB_NAME = 'AdmGuruTrubusImanDB';
 const IDB_STORE = 'app_state';
+const IDB_APK_STORE = 'apk_assets';
 const IDB_RECORD_KEY = 'primary_database';
+const IDB_APK_KEY = 'official_android_apk';
 
 /**
  * Opens IndexedDB for high-capacity offline storage (supports large uploaded
- * Admin logo/thumbnail data URLs without hitting 5MB localStorage limits).
+ * Admin logo/thumbnail data URLs and official signed Android APK binaries).
  */
 function openIDB(): Promise<IDBDatabase | null> {
   if (typeof indexedDB === 'undefined') return Promise.resolve(null);
   return new Promise((resolve) => {
     try {
-      const request = indexedDB.open(IDB_NAME, 1);
+      const request = indexedDB.open(IDB_NAME, 2);
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(IDB_STORE)) {
           db.createObjectStore(IDB_STORE);
+        }
+        if (!db.objectStoreNames.contains(IDB_APK_STORE)) {
+          db.createObjectStore(IDB_APK_STORE);
         }
       };
       request.onsuccess = () => resolve(request.result);
@@ -28,6 +33,88 @@ function openIDB(): Promise<IDBDatabase | null> {
       resolve(null);
     }
   });
+}
+
+export async function saveApkBlob(file: Blob): Promise<boolean> {
+  const db = await openIDB();
+  if (!db) return false;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(IDB_APK_STORE, 'readwrite');
+      tx.objectStore(IDB_APK_STORE).put(file, IDB_APK_KEY);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+export async function loadApkBlob(): Promise<Blob | null> {
+  const db = await openIDB();
+  if (!db) return null;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(IDB_APK_STORE, 'readonly');
+      const req = tx.objectStore(IDB_APK_STORE).get(IDB_APK_KEY);
+      req.onsuccess = () => resolve((req.result as Blob) || null);
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+export async function deleteApkBlob(): Promise<void> {
+  const db = await openIDB();
+  if (!db) return;
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(IDB_APK_STORE, 'readwrite');
+      tx.objectStore(IDB_APK_STORE).delete(IDB_APK_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+/**
+ * Generates a valid Bubblewrap / PWABuilder `twa-manifest.json` so Admin
+ * can compile a genuine signed Android APK wrapper for this PWA in one step.
+ */
+export function downloadTwaManifest(appName: string, version: string, originUrl: string): void {
+  const parsed = new URL(originUrl);
+  const manifest = {
+    packageId: 'id.ponpes.trubusiman.admguru',
+    host: parsed.host,
+    name: appName || 'Adm Guru Pesantren Trubus Iman',
+    launcherName: 'Adm Trubus',
+    display: 'standalone',
+    themeColor: '#065F46',
+    themeColorDark: '#042F2E',
+    navigationColor: '#065F46',
+    backgroundColor: '#F6F8F7',
+    enableNotifications: true,
+    startUrl: '/',
+    iconUrl: `${parsed.origin}/pwa-512x512.png`,
+    maskableIconUrl: `${parsed.origin}/pwa-maskable-512x512.png`,
+    appVersionName: version,
+    appVersionCode: Math.max(1, Number(version.replace(/\./g, '')) || 130),
+    webManifestUrl: `${parsed.origin}/manifest.webmanifest`,
+    fallbackType: 'customtabs',
+    orientation: 'portrait',
+  };
+  const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'twa-manifest.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 async function readFromIDB(): Promise<AppDatabase | null> {

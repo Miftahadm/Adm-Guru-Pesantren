@@ -1,6 +1,6 @@
 import { AppDatabase, VersionRecord } from '../types';
 
-export const CURRENT_APP_VERSION = '1.2.0';
+export const CURRENT_APP_VERSION = '1.3.0';
 export const CURRENT_SCHEMA_VERSION = 2;
 
 export const DAY_NAMES: Record<number, string> = {
@@ -89,6 +89,17 @@ export const SYSTEM_RELEASE_MANIFEST: Omit<VersionRecord, 'recordedOnDeviceAt'>[
       { type: 'Added', summary: 'Panel Admin terproteksi password untuk kustomisasi Logo Aplikasi, Thumbnail Online (OG), dan Identitas Kop Surat.' },
       { type: 'Added', summary: 'Otomasi pencatatan riwayat versi & audit perubahan aplikasi dari masa ke masa.' },
       { type: 'Updated', summary: 'Dukungan penuh Progressive Web App (PWA) dengan Service Worker offline dan tombol Install Aplikasi.' },
+    ],
+  },
+  {
+    version: '1.3.0',
+    releasedAt: '2026-11-27',
+    title: 'Fitur Share & Unduh APK Android untuk WhatsApp di Beranda',
+    source: 'system_release',
+    changes: [
+      { type: 'Added', summary: 'Tombol Share APK (WA) pada Beranda untuk mengunduh file APK Android otomatis dan membagikannya via WhatsApp.' },
+      { type: 'Added', summary: 'Pengelolaan file/tautan APK Android resmi di Panel Admin (Password 2011) dengan penyimpanan biner IndexedDB.' },
+      { type: 'Added', summary: 'Ekspor konfigurasi twa-manifest.json siap pakai untuk kompilasi APK resmi melalui PWABuilder / Bubblewrap.' },
     ],
   },
 ];
@@ -378,6 +389,10 @@ export function createInitialDatabase(): AppDatabase {
       principalTitle: 'Pimpinan / Kepala Sekolah',
       principalNip: 'NIY. 2011.01.001',
       city: 'Tanah Grogot',
+      apkDownloadUrl: null,
+      apkFileName: 'Adm_Guru_Pesantren_Trubus_Iman.apk',
+      apkUploadedAt: null,
+      apkFileSize: null,
       updatedAt: nowIso,
     },
     versionHistory,
