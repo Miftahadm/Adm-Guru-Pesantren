@@ -1,0 +1,6 @@
+{
+  "name": "Adm Guru Pesantren Trubus Iman",
+  "description": "Aplikasi PWA administrasi guru offline-first untuk Pesantren Trubus Iman: jadwal & alarm suara, data siswa, absensi, daftar nilai, jurnal mengajar di kelas & non kelas, ekskul, serta ekspor PDF & Excel resmi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

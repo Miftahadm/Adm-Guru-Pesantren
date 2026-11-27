@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="112" fill="#065F46"/>
+  <rect x="28" y="28" width="456" height="456" rx="90" stroke="#D97706" stroke-width="6" stroke-opacity="0.45"/>
+  <!-- Islamic geometric 8-point subtle star backdrop -->
+  <g opacity="0.14" stroke="#FFFFFF" stroke-width="4">
+    <rect x="136" y="136" width="240" height="240" rx="16"/>
+    <rect x="136" y="136" width="240" height="240" rx="16" transform="rotate(45 256 256)"/>
+  </g>
+  <!-- Open Book & Dome emblem representing Pesantren Trubus Iman -->
+  <path d="M256 112C212 148 184 176 184 214H328C328 176 300 148 256 112Z" fill="#F59E0B"/>
+  <circle cx="256" cy="98" r="10" fill="#FDE68A"/>
+  <path d="M126 242C126 232 134 224 144 224H224C241.673 224 256 238.327 256 256V374C256 360 242 350 224 350H144C134 350 126 342 126 332V242Z" fill="#FFFFFF"/>
+  <path d="M386 242C386 232 378 224 368 224H288C270.327 224 256 238.327 256 256V374C256 360 270 350 288 350H368C378 350 386 342 386 332V242Z" fill="#ECFDF5"/>
+  <path d="M156 266H222M156 294H222M156 322H206" stroke="#065F46" stroke-width="10" stroke-linecap="round"/>
+  <path d="M290 266H356M290 294H356M290 322H340" stroke="#065F46" stroke-width="10" stroke-linecap="round"/>
+  <path d="M120 388H392" stroke="#F59E0B" stroke-width="10" stroke-linecap="round"/>
+</svg>
